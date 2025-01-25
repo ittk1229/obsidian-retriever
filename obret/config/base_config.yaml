@@ -1,7 +1,7 @@
 vault_dirpath: ./data/Remote/
 vault_dict_filepath: ./data/vault_dict.pkl
 index_dirpath: ./data/mecab_index/
-stopwords_filepath: ./data/stopwords.txt
+stopword_filepath: ./data/stopword.txt
 exclude_dirnames:
   - 0-template
   - 0-template.nvim

@@ -176,6 +176,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e3/da/5b56f789d47ab8ba35e871c4f4c188364c72ed5b0c3df022e63d4f4b2407/fugashi-1.4.0-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:334793ca17a81c3fcea0ca2edf10bd5fcd9bc59cf8c99572003d76172d9e352d", size = 492219 },
 ]
 
+[package.optional-dependencies]
+unidic = [
+    { name = "unidic" },
+]
+
 [[package]]
 name = "heapdict"
 version = "1.0.1"
@@ -556,7 +561,7 @@ name = "obsidian-retriever"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "fugashi" },
+    { name = "fugashi", extra = ["unidic"] },
     { name = "pydantic-settings" },
     { name = "python-terrier" },
     { name = "pyyaml" },
@@ -570,7 +575,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fugashi", specifier = ">=1.4.0" },
+    { name = "fugashi", extras = ["unidic"], specifier = ">=1.4.0" },
     { name = "pydantic-settings", specifier = ">=2.7.1" },
     { name = "python-terrier", specifier = ">=0.13.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
@@ -647,6 +652,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d1/81/74f6a65b848ffd16c18f920620ce999fe45fe27f01ab3911260ce4ed85e4/patsy-1.0.1.tar.gz", hash = "sha256:e786a9391eec818c054e359b737bbce692f051aee4c661f4141cc88fb459c0c4", size = 396010 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/87/2b/b50d3d08ea0fc419c183a84210571eba005328efa62b6b98bc28e9ead32a/patsy-1.0.1-py2.py3-none-any.whl", hash = "sha256:751fb38f9e97e62312e921a1954b81e1bb2bcda4f5eeabaf94db251ee791509c", size = 232923 },
+]
+
+[[package]]
+name = "plac"
+version = "1.4.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/79/1edb4c836c69306d0ecb0865f46d62ea7e28ef16b3f95bb394e4f2a46330/plac-1.4.3.tar.gz", hash = "sha256:d4cb3387b2113a28aebd509433d0264a4e5d9bb7c1a86db4fbd0a8f11af74eb3", size = 38984 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8f/af/4c61d2ac0d589719f548f5a1ba919738e44bac7b0c723ce147de5556d233/plac-1.4.3-py2.py3-none-any.whl", hash = "sha256:8a84fde8f950c9de6588a2d53c9deeac3ba1ddb456d887a33228460cf6549750", size = 22458 },
 ]
 
 [[package]]
@@ -1103,6 +1117,18 @@ wheels = [
 ]
 
 [[package]]
+name = "unidic"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "plac" },
+    { name = "requests" },
+    { name = "tqdm" },
+    { name = "wasabi" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5a/09/271dfbf8d5b56adddc70e30fa94249f5d3ab35f615bf278d65258045564a/unidic-1.1.0.tar.gz", hash = "sha256:0ab91c05de342c84d2a6314901fd3afb9061ecd7534dd4a0431dccbb87d921b7", size = 7688 }
+
+[[package]]
 name = "unlzw3"
 version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1134,6 +1160,15 @@ name = "warc3-wet-clueweb09"
 version = "0.2.5"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9f/c1/dd817bf57e0274dacb10e0ac868cb6cd70876950cf361c41879c030a2b8b/warc3-wet-clueweb09-0.2.5.tar.gz", hash = "sha256:3054bfc07da525d5967df8ca3175f78fa3f78514c82643f8c81fbca96300b836", size = 17853 }
+
+[[package]]
+name = "wasabi"
+version = "0.10.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/41/0c31737ee1a29c8b829690ebb4ab988b1f489aa2c3efa115a732a9dd7997/wasabi-0.10.1.tar.gz", hash = "sha256:c8e372781be19272942382b14d99314d175518d7822057cb7a97010c4259d249", size = 28380 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/74/bd566f876c2de097e75d525c2696fb9829009987a0d93a4fb3576778a0a8/wasabi-0.10.1-py3-none-any.whl", hash = "sha256:fe862cc24034fbc9f04717cd312ab884f71f51a8ecabebc3449b751c2a649d83", size = 26075 },
+]
 
 [[package]]
 name = "wget"
