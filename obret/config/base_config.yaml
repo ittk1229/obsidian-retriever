@@ -1,9 +1,9 @@
-vault_dirpath: ./data/Remote/
-vault_dict_filepath: ./data/vault_dict.pkl
-index_dirpath: ./data/mecab_index/
-stopword_filepath: ./data/stopword.txt
+vault_dirpath: /Users/ittk1229/Obsidian/Remote
+index_dirpath: ./data/indexes/mecab/
+stopwords_filepath: ./data/stopwords.txt
 exclude_dirnames:
   - 0-template
-  - 0-template.nvim
   - 1-resource
+  - 7-journal
+  - advpaste
   - tracker

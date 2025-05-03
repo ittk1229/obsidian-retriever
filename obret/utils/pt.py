@@ -21,3 +21,15 @@ def create_japanese_analyzer(stopword_filepath):
         return result
 
     return _japanese_analyzer
+
+
+def df_to_dict_list(df, snippet_maxlen=100):
+    result = []
+    for _, row in df.iterrows():
+        snippet = row["body_0"]
+        if len(snippet) > snippet_maxlen:
+            snippet = snippet[:snippet_maxlen] + "..."
+        result.append(
+            {"title": row["title_0"], "linkpath": row["linkpath"], "snippet": snippet}
+        )
+    return result
