@@ -2,7 +2,7 @@
 
 Obsidian Retriever は、Obsidian Vault 用の検索エンジンです。
 
-Obsidian SERP 経由で、Obsidian アプリ経由で利用することができます。
+[Obsidian SERP](https://github.com/ittk1229/obsidian-serp-plugin) 経由で、Obsidian アプリから利用することができます。
 
 現在は Obsidian がインストールされた PC での実行を想定しており、BM25 を用いた効率的な単語一致検索のみを提供しています。
 
