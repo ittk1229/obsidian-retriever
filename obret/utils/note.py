@@ -20,10 +20,10 @@ class ObsidianNote:
             text = f.read()
 
         # frontmatter と body を分割して格納
-        self.title = self.note_path.stem
         self.frontmatter = {}
         self.body = ""
         self._parse_content(text)
+        self.title = self.get_title()
 
     def _parse_content(self, text: str):
         # frontmatter 部分を正規表現で抽出
@@ -38,3 +38,10 @@ class ObsidianNote:
 
         # 本文は残り部分
         self.body = text.strip()
+
+    def get_title(self) -> str:
+        # frontmatter に title がない場合はファイル名をタイトルとする
+        title = self.frontmatter.get("title", None)
+        if not title:
+            title = self.note_path.stem
+        return title

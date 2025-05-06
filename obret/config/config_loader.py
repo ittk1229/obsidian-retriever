@@ -8,6 +8,6 @@ def load_yaml_config(file_path: str) -> dict:
         return yaml.safe_load(f)
 
 
-def load_base_config() -> BaseConfig:
-    config_dict = load_yaml_config("./obret/config/base_config.yaml")
+def load_base_config(config_filepath="./obret/config/base_config.yaml") -> BaseConfig:
+    config_dict = load_yaml_config(config_filepath)
     return BaseConfig(**config_dict)

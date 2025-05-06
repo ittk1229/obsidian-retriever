@@ -7,3 +7,4 @@ exclude_dirnames:
   - 7-journal
   - advpaste
   - tracker
+reindex_interval: 600 # (sec)
