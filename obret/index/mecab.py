@@ -69,13 +69,3 @@ def build_index_from_notes(cfg: BaseConfig):
 
     # 統計情報を表示
     print(index.getCollectionStatistics().toString())
-
-
-if __name__ == "__main__":
-    cfg = load_base_config()
-
-    # PyTerrier の初期化
-    if not pt.java.started():
-        pt.java.init()
-
-    build_index_from_notes(cfg)

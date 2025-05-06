@@ -1,10 +1,6 @@
-vault_dirpath: /Users/ittk1229/Obsidian/Remote
+vault_dirpath: path/to/your_vault
 index_dirpath: ./data/indexes/mecab/
 stopwords_filepath: ./data/stopwords.txt
 exclude_dirnames:
-  - 0-template
-  - 1-resource
-  - 7-journal
-  - advpaste
-  - tracker
+  - templates
 reindex_interval: 600 # (sec)
