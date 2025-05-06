@@ -27,6 +27,7 @@ Obsidian Retriever は、Obsidian Vault 用の検索エンジンです。
 ```sh
 # リポジトリをクローン
 git clone https://github.com/ittk1229/obsidian-retriever
+cd obsidian-retriever
 
 # uvがインストールされていない場合はインストール
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -43,7 +44,7 @@ uv run python -m unidic download
 `obret/config/base_config.yaml`にある設定ファイルを変更するか、新しい設定ファイルを作成します：
 
 ```yaml
-vault_dirpath: /path/to/your/obsidian/vault
+vault_dirpath: /path/to/your_obsidian_vault
 exclude_dirnames: # valt_dirpathからの相対パス、指定されなかった全てのフォルダからmdを探して処理
   - templates
 reindex_interval: 600 # 秒
@@ -53,7 +54,7 @@ reindex_interval: 600 # 秒
 
 | オプション           | 説明                                             | デフォルト値            |
 | -------------------- | ------------------------------------------------ | ----------------------- |
-| `vault_dirpath`      | Obsidian ボールトへのパス                        | `path/to/your_vault`    |
+| `vault_dirpath`      | Obsidian Vaultへのパス                        | `path/to/your_vault`    |
 | `index_dirpath`      | 検索インデックスが保存されるディレクトリ         | `./data/indexes/mecab/` |
 | `stopwords_filepath` | ストップワードを含むファイルへのパス             | `./data/stopwords.txt`  |
 | `exclude_dirnames`   | インデックス作成から除外するディレクトリのリスト | `['templates']`         |
