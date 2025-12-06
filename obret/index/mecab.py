@@ -47,11 +47,12 @@ def generate_notes(
         }
 
 
-def build_index_from_notes(cfg: BaseConfig):
+def build_index_from_notes(cfg: BaseConfig, target_dirpath: str | Path | None = None):
+    index_dir = Path(target_dirpath) if target_dirpath else Path(cfg.index_dirpath)
     # インデックスの設定と作成
     threads = cfg.indexing_threads or (os.cpu_count() or 1)
     indexer = pt.IterDictIndexer(
-        str(Path(cfg.index_dirpath).resolve()),
+        str(index_dir.resolve()),
         meta={"docno": 8, "linkpath": 128, "title_0": 128, "body_0": 1024},
         text_attrs=["title", "body"],
         fields=True,

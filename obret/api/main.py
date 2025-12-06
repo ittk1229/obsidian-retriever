@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
@@ -43,6 +44,9 @@ async def lifespan(app: FastAPI, config_path: Optional[str]):
     app.state.index = index
     app.state.analyzer = analyzer
     app.state.pipeline = pipeline
+    app.state.reindex_lock = asyncio.Lock()
+    app.state.rebuild_index = lambda reason="manual": rebuild_index(app, reason)
+    app.state.loop = asyncio.get_running_loop()
 
     # 自動再インデックスのためのタスク開始
     app.state.reindex_task = asyncio.create_task(periodic_reindex(app))
@@ -62,23 +66,42 @@ async def periodic_reindex(app: FastAPI):
     while True:
         try:
             await asyncio.sleep(app.state.config.reindex_interval)
-
-            # インデックスの再構築
-            print("Auto-reindexing started...")
-            build_index_from_notes(app.state.config)
-            index = pt.IndexFactory.of(
-                str(Path(app.state.config.index_dirpath).resolve())
-            )
-
-            # 検索パイプラインの再構築
-            pipeline = build_pipeline(index, app.state.analyzer)
-
-            app.state.index = index
-            app.state.pipeline = pipeline
-
-            print("Auto-reindexing completed")
+            await rebuild_index(app, reason="auto")
+        except asyncio.CancelledError:
+            break
         except Exception as e:
             print(f"Error during auto-reindexing: {e}")
+
+
+async def rebuild_index(app: FastAPI, reason: str = "manual"):
+    async with app.state.reindex_lock:
+        cfg = app.state.config
+        base_dir = Path(cfg.index_dirpath).resolve()
+        temp_dir = base_dir.with_name(base_dir.name + ".tmp")
+        backup_dir = base_dir.with_name(base_dir.name + ".old")
+
+        def _build_and_swap():
+            print(f"{reason.capitalize()} reindex: preparing temp index at {temp_dir}")
+            temp_dir.parent.mkdir(parents=True, exist_ok=True)
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir)
+            if backup_dir.exists():
+                shutil.rmtree(backup_dir)
+
+            build_index_from_notes(cfg, target_dirpath=temp_dir)
+
+            if base_dir.exists():
+                base_dir.rename(backup_dir)
+            temp_dir.rename(base_dir)
+
+            index = pt.IndexFactory.of(str(base_dir))
+            pipeline = build_pipeline(index, app.state.analyzer)
+            print(f"{reason.capitalize()} reindex: swap completed (old backup={backup_dir})")
+            return index, pipeline
+
+        index, pipeline = await asyncio.to_thread(_build_and_swap)
+        app.state.index = index
+        app.state.pipeline = pipeline
 
 
 def create_app(config_path: Optional[str] = None):

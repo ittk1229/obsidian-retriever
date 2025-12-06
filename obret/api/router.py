@@ -1,10 +1,9 @@
+import asyncio
 import datetime
 from pathlib import Path
-import pyterrier as pt
+
 from fastapi import APIRouter, BackgroundTasks, Query, Request
 
-from obret.index.mecab import build_index_from_notes
-from obret.retrieve.bm25 import build_pipeline
 from obret.utils.pyterrier_utils import df_to_dict_list
 
 router = APIRouter()
@@ -25,7 +24,7 @@ def search(request: Request, q: str = Query(..., description="Search query")):
 @router.post("/index")
 def rebuild_index(background_tasks: BackgroundTasks, request: Request):
     # バックグラウンドタスクとしてインデックスの再構築を実行
-    background_tasks.add_task(rebuild_index_task, request.app)
+    background_tasks.add_task(schedule_rebuild, request.app)
     return {"message": "Index rebuild started in background"}
 
 
@@ -46,18 +45,10 @@ def index_status(request: Request):
     }
 
 
-def rebuild_index_task(app):
+def schedule_rebuild(app):
     """明示的なインデックス再構築のバックグラウンドタスク"""
     try:
-        # インデックスの再構築
-        build_index_from_notes(app.state.config)
-        index = pt.IndexFactory.of(str(Path(app.state.config.index_dirpath).resolve()))
-
-        pipeline = build_pipeline(index, app.state.analyzer)
-
-        app.state.index = index
-        app.state.pipeline = pipeline
-
-        print("Manual index rebuild completed")
+        loop = app.state.loop
+        asyncio.run_coroutine_threadsafe(app.state.rebuild_index("manual"), loop)
     except Exception as e:
-        print(f"Error during manual index rebuild: {e}")
+        print(f"Error scheduling manual index rebuild: {e}")

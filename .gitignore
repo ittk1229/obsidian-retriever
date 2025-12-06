@@ -163,4 +163,5 @@ cython_debug/
 
 # project
 data/indexes
-my_config.yaml
+*.yaml
+!base_config.yaml
