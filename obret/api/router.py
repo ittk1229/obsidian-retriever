@@ -1,6 +1,5 @@
 import datetime
-import os
-
+from pathlib import Path
 import pyterrier as pt
 from fastapi import APIRouter, BackgroundTasks, Query, Request
 
@@ -14,7 +13,12 @@ router = APIRouter()
 @router.get("/search")
 def search(request: Request, q: str = Query(..., description="Search query")):
     result_df = request.app.state.pipeline.search(q)
-    result = df_to_dict_list(result_df, snippet_maxlen=request.app.state.config.snippet_max_len)
+    result = df_to_dict_list(
+        result_df,
+        snippet_maxlen=request.app.state.config.snippet_max_len,
+        vault_dirpath=request.app.state.config.vault_dirpath,
+        query=q,
+    )
     return {"results": result}
 
 
@@ -28,7 +32,8 @@ def rebuild_index(background_tasks: BackgroundTasks, request: Request):
 @router.get("/index/status")
 def index_status(request: Request):
     # インデックスの状態を取得
-    last_indexed = os.path.getmtime(request.app.state.config.index_dirpath)
+    index_path = Path(request.app.state.config.index_dirpath).resolve()
+    last_indexed = index_path.stat().st_mtime
     # 読みやすい形式に変換
     last_indexed = datetime.datetime.fromtimestamp(last_indexed).strftime("%m/%d %H:%M")
     note_count = (
@@ -46,7 +51,7 @@ def rebuild_index_task(app):
     try:
         # インデックスの再構築
         build_index_from_notes(app.state.config)
-        index = pt.IndexFactory.of(app.state.config.index_dirpath)
+        index = pt.IndexFactory.of(str(Path(app.state.config.index_dirpath).resolve()))
 
         pipeline = build_pipeline(index, app.state.analyzer)
 

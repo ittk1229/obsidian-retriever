@@ -13,7 +13,7 @@ from obret.api.router import router
 from obret.config.config_loader import load_base_config
 from obret.index.mecab import build_index_from_notes
 from obret.retrieve.bm25 import build_pipeline
-from obret.utils.pyterrier_utils import create_japanese_analyzer
+from obret.utils.pyterrier_utils import create_japanese_analyzer, index_ready
 
 
 @asynccontextmanager
@@ -25,10 +25,16 @@ async def lifespan(app: FastAPI, config_path: Optional[str]):
         pt.java.init()
 
     # 検索パイププラインの初期化
-    if not Path(cfg.index_dirpath).exists():
+    index_path = str(Path(cfg.index_dirpath).resolve())
+    if not index_ready(index_path):
         build_index_from_notes(cfg)
 
-    index = pt.IndexFactory.of(cfg.index_dirpath)
+    try:
+        index = pt.IndexFactory.of(index_path)
+    except Exception:
+        # Rebuild once in case an empty/corrupted index directory exists
+        build_index_from_notes(cfg)
+        index = pt.IndexFactory.of(index_path)
     analyzer = create_japanese_analyzer(cfg.stopwords_filepath)
     pipeline = build_pipeline(index, analyzer)
 
@@ -60,7 +66,9 @@ async def periodic_reindex(app: FastAPI):
             # インデックスの再構築
             print("Auto-reindexing started...")
             build_index_from_notes(app.state.config)
-            index = pt.IndexFactory.of(app.state.config.index_dirpath)
+            index = pt.IndexFactory.of(
+                str(Path(app.state.config.index_dirpath).resolve())
+            )
 
             # 検索パイプラインの再構築
             pipeline = build_pipeline(index, app.state.analyzer)
@@ -101,4 +109,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     app = create_app(args.config)
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=8229, log_level="debug")

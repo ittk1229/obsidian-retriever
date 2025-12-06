@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 
 import yaml
+from yaml import YAMLError
 
 
 class ObsidianNote:
@@ -31,10 +32,16 @@ class ObsidianNote:
         match = re.search(frontmatter_pattern, text, re.DOTALL | re.MULTILINE)
 
         if match:
-            # YAMLのパース
-            self.frontmatter = yaml.safe_load(match.group(1)) or {}
-            # frontmatter 部分を削除
-            text = text[match.end() :]
+            fm_text = match.group(1)
+            try:
+                # YAMLのパース
+                self.frontmatter = yaml.safe_load(fm_text) or {}
+                # frontmatter 部分を削除
+                text = text[match.end() :]
+            except YAMLError as e:
+                # frontmatter の壊れた YAML では例外を握りつぶし本文として扱う
+                print(f"Failed to parse frontmatter in {self.note_path}: {e}")
+                self.frontmatter = {}
 
         # 本文は残り部分
         self.body = text.strip()

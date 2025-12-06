@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Callable, Generator
 
@@ -10,32 +11,32 @@ from obret.utils.pyterrier_utils import create_japanese_analyzer, create_md_pars
 
 
 def generate_notes(
-    vault_dirpath: str | Path, exclude_dirnames, analyzer: Callable, md_parser
+    vault_dirpath: str | Path,
+    exclude_dirnames,
+    analyzer: Callable,
+    md_parser: Callable,
 ) -> Generator:
     vault_dirpath = Path(vault_dirpath)
 
+    print(f"Indexing notes under: {vault_dirpath}")
     for i, note_filepath in enumerate(vault_dirpath.rglob("*.md")):
-        if any(
-            note_filepath.relative_to(vault_dirpath).parts[0] == dirname
-            for dirname in exclude_dirnames
-        ):
+        rel_parts = note_filepath.relative_to(vault_dirpath).parts
+        # skip if the first directory matches an excluded folder
+        if rel_parts and rel_parts[0] in exclude_dirnames:
             continue
+        if i % 500 == 0 and i > 0:
+            print(f"  processed {i} notes... latest={note_filepath}")
 
         note = ObsidianNote(vault_dirpath, note_filepath)
-        # frontmatterの値も検索に利用
         frontmatter_values = (
             " ".join(map(str, note.frontmatter.values())) if note.frontmatter else ""
         )
-
-        # 検索に用いるフィールド
         docno = str(i)
         title = analyzer(note.title)
         body = analyzer(note.body + " " + frontmatter_values)
-        # メタデータとして保存するフィールド
         linkpath = str(note.relative_path)
         title_0 = note.title
         body_0 = md_parser(note.body)
-
         yield {
             "docno": docno,
             "title": title,
@@ -48,6 +49,7 @@ def generate_notes(
 
 def build_index_from_notes(cfg: BaseConfig):
     # インデックスの設定と作成
+    threads = cfg.indexing_threads or (os.cpu_count() or 1)
     indexer = pt.IterDictIndexer(
         str(Path(cfg.index_dirpath).resolve()),
         meta={"docno": 8, "linkpath": 128, "title_0": 128, "body_0": 1024},
@@ -57,6 +59,7 @@ def build_index_from_notes(cfg: BaseConfig):
         overwrite=True,
         verbose=True,
         tokeniser="UTFTokeniser",
+        threads=threads,
     )
 
     # インデックス生成
@@ -68,4 +71,5 @@ def build_index_from_notes(cfg: BaseConfig):
     index = pt.IndexFactory.of(index_ref)
 
     # 統計情報を表示
+    print("Index built.")
     print(index.getCollectionStatistics().toString())

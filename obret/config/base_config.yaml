@@ -4,3 +4,4 @@ stopwords_filepath: ./data/stopwords.txt
 exclude_dirnames:
   - templates
 reindex_interval: 600 # (sec)
+indexing_threads: null
