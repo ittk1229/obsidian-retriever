@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/search")
 def search(request: Request, q: str = Query(..., description="Search query")):
     result_df = request.app.state.pipeline.search(q)
-    result = df_to_dict_list(result_df)
+    result = df_to_dict_list(result_df, snippet_maxlen=request.app.state.config.snippet_max_len)
     return {"results": result}
 
 
