@@ -47,6 +47,8 @@ async def lifespan(app: FastAPI, config_path: Optional[str]):
     app.state.reindex_lock = asyncio.Lock()
     app.state.rebuild_index = lambda reason="manual": rebuild_index(app, reason)
     app.state.loop = asyncio.get_running_loop()
+    app.state.reindexing = False
+    app.state.reindex_progress = None
 
     # 自動再インデックスのためのタスク開始
     app.state.reindex_task = asyncio.create_task(periodic_reindex(app))
@@ -75,6 +77,8 @@ async def periodic_reindex(app: FastAPI):
 
 async def rebuild_index(app: FastAPI, reason: str = "manual"):
     async with app.state.reindex_lock:
+        app.state.reindexing = True
+        app.state.reindex_progress = 0.0
         cfg = app.state.config
         base_dir = Path(cfg.index_dirpath).resolve()
         temp_dir = base_dir.with_name(base_dir.name + ".tmp")
@@ -88,7 +92,13 @@ async def rebuild_index(app: FastAPI, reason: str = "manual"):
             if backup_dir.exists():
                 shutil.rmtree(backup_dir)
 
-            build_index_from_notes(cfg, target_dirpath=temp_dir)
+            def _progress(done: int, total: int):
+                if total <= 0:
+                    app.state.reindex_progress = 100.0
+                else:
+                    app.state.reindex_progress = min(100.0, (done / total) * 100.0)
+
+            build_index_from_notes(cfg, target_dirpath=temp_dir, progress_callback=_progress)
 
             if base_dir.exists():
                 base_dir.rename(backup_dir)
@@ -96,12 +106,18 @@ async def rebuild_index(app: FastAPI, reason: str = "manual"):
 
             index = pt.IndexFactory.of(str(base_dir))
             pipeline = build_pipeline(index, app.state.analyzer)
-            print(f"{reason.capitalize()} reindex: swap completed (old backup={backup_dir})")
+            print(
+                f"{reason.capitalize()} reindex: swap completed (old backup={backup_dir})"
+            )
             return index, pipeline
 
-        index, pipeline = await asyncio.to_thread(_build_and_swap)
-        app.state.index = index
-        app.state.pipeline = pipeline
+        try:
+            index, pipeline = await asyncio.to_thread(_build_and_swap)
+            app.state.index = index
+            app.state.pipeline = pipeline
+        finally:
+            app.state.reindexing = False
+            app.state.reindex_progress = None
 
 
 def create_app(config_path: Optional[str] = None):
