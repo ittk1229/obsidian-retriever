@@ -32,7 +32,7 @@ def index_ready(index_dirpath: str | Path) -> bool:
 # 日本語の形態素解析器
 def create_japanese_analyzer(stopword_filepath):
     stopword_regex = re.compile(STOP_SYMBOLS)
-    stopwords = set([w.strip() for w in open(stopword_filepath).readlines()])
+    stopwords = set([w.strip() for w in open(stopword_filepath, encoding="utf-8_sig").readlines()])
     tagger = Tagger()
 
     def _japanese_analyzer(text):
