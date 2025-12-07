@@ -100,9 +100,37 @@ async def rebuild_index(app: FastAPI, reason: str = "manual"):
 
             build_index_from_notes(cfg, target_dirpath=temp_dir, progress_callback=_progress)
 
-            if base_dir.exists():
-                base_dir.rename(backup_dir)
-            temp_dir.rename(base_dir)
+            # Validate the freshly built index before swapping
+            temp_index = pt.IndexFactory.of(str(temp_dir))
+            try:
+                _ = temp_index.getCollectionStatistics()
+            finally:
+                close_tmp = getattr(temp_index, "close", None)
+                if callable(close_tmp):
+                    try:
+                        close_tmp()
+                    except Exception:
+                        pass
+
+            old_index = getattr(app.state, "index", None)
+            if callable(getattr(old_index, "close", None)):
+                try:
+                    old_index.close()
+                except Exception:
+                    # Swap proceeds even if close fails; Windows rename needs best effort close
+                    pass
+
+            try:
+                if base_dir.exists():
+                    base_dir.rename(backup_dir)
+                temp_dir.rename(base_dir)
+            except Exception:
+                # Attempt to restore original layout and clean temp on failure
+                if not base_dir.exists() and backup_dir.exists():
+                    backup_dir.rename(base_dir)
+                if temp_dir.exists():
+                    shutil.rmtree(temp_dir)
+                raise
 
             index = pt.IndexFactory.of(str(base_dir))
             pipeline = build_pipeline(index, app.state.analyzer)
@@ -147,5 +175,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    # Load config once here to pick up server host/port for uvicorn
+    cfg_for_server = load_base_config(args.config) if args.config else load_base_config()
     app = create_app(args.config)
-    uvicorn.run(app, host="0.0.0.0", port=8229, log_level="debug")
+    uvicorn.run(app, host=cfg_for_server.api_host, port=cfg_for_server.api_port, log_level="debug")

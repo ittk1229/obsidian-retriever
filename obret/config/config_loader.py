@@ -24,6 +24,13 @@ def load_base_config(config_filepath: str | Path = "obret/config/base_config.yam
             config_dict["reindex_interval"] = int(env_val)
         except ValueError:
             pass
+    if env_val := os.getenv("OBRET_API_PORT"):
+        try:
+            config_dict["api_port"] = int(env_val)
+        except ValueError:
+            pass
+    if env_val := os.getenv("OBRET_API_HOST"):
+        config_dict["api_host"] = env_val
     if env_val := os.getenv("OBRET_SNIPPET_MAX_LEN"):
         try:
             config_dict["snippet_max_len"] = int(env_val)

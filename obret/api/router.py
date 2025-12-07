@@ -42,6 +42,8 @@ def get_config(request: Request):
         "exclude_dirnames": cfg.exclude_dirnames,
         "reindex_interval": cfg.reindex_interval,
         "snippet_max_len": cfg.snippet_max_len,
+        "api_host": cfg.api_host,
+        "api_port": cfg.api_port,
     }
 
 
