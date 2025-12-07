@@ -2,7 +2,7 @@ import asyncio
 import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Query, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from obret.utils.pyterrier_utils import df_to_dict_list
@@ -18,6 +18,9 @@ class ConfigUpdate(BaseModel):
 
 @router.get("/search")
 def search(request: Request, q: str = Query(..., description="Search query")):
+    # Block only during the brief swap window to keep queries available while building
+    if getattr(request.app.state, "swap_in_progress", False):
+        raise HTTPException(status_code=503, detail="Reindexing in progress")
     result_df = request.app.state.pipeline.search(q)
     result = df_to_dict_list(
         result_df,
@@ -69,14 +72,21 @@ def update_config(request: Request, payload: ConfigUpdate):
 
 @router.get("/index/status")
 def index_status(request: Request):
-    # インデックスの状態を取得
+    # インデックスの状態を取得（起動直後やエラー時に None の場合があるので防御的に扱う）
     index_path = Path(request.app.state.config.index_dirpath).resolve()
-    last_indexed = index_path.stat().st_mtime
-    # 読みやすい形式に変換
-    last_indexed = datetime.datetime.fromtimestamp(last_indexed).strftime("%m/%d %H:%M")
-    note_count = (
-        request.app.state.index.getCollectionStatistics().getNumberOfDocuments()
-    )
+    try:
+        last_indexed_ts = index_path.stat().st_mtime
+        last_indexed = datetime.datetime.fromtimestamp(last_indexed_ts).strftime("%m/%d %H:%M")
+    except (FileNotFoundError, OSError):
+        last_indexed = None
+
+    note_count = None
+    idx = getattr(request.app.state, "index", None)
+    if idx:
+        try:
+            note_count = idx.getCollectionStatistics().getNumberOfDocuments()
+        except Exception:
+            note_count = None
 
     return {
         "last_indexed": last_indexed,

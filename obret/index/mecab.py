@@ -91,8 +91,20 @@ def build_index_from_notes(
             filepaths, cfg.vault_dirpath, analyzer, md_parser, progress_callback
         ),
     )
+    if hasattr(indexer, "close"):
+        try:
+            indexer.close()
+        except Exception:
+            pass
     index = pt.IndexFactory.of(index_ref)
 
     # 統計情報を表示
     print("Index built.")
     print(index.getCollectionStatistics().toString())
+
+    # 明示的にクローズしてファイルハンドルを解放（Windows のリネーム対策）
+    if hasattr(index, "close"):
+        try:
+            index.close()
+        except Exception:
+            pass

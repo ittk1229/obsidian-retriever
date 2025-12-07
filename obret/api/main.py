@@ -1,6 +1,8 @@
 import argparse
 import asyncio
+import gc
 import shutil
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
@@ -49,6 +51,7 @@ async def lifespan(app: FastAPI, config_path: Optional[str]):
     app.state.loop = asyncio.get_running_loop()
     app.state.reindexing = False
     app.state.reindex_progress = None
+    app.state.swap_in_progress = False
 
     # 自動再インデックスのためのタスク開始
     app.state.reindex_task = asyncio.create_task(periodic_reindex(app))
@@ -112,25 +115,48 @@ async def rebuild_index(app: FastAPI, reason: str = "manual"):
                     except Exception:
                         pass
 
-            old_index = getattr(app.state, "index", None)
-            if callable(getattr(old_index, "close", None)):
-                try:
-                    old_index.close()
-                except Exception:
-                    # Swap proceeds even if close fails; Windows rename needs best effort close
-                    pass
-
             try:
+                # Block search only during the short swap window
+                app.state.swap_in_progress = True
+                # Drop pipeline reference to reduce open handles during swap
+                app.state.pipeline = None
+
+                old_index = getattr(app.state, "index", None)
+                if callable(getattr(old_index, "close", None)):
+                    try:
+                        old_index.close()
+                    except Exception as e:
+                        print(f"Warning: failed to close old index before swap: {e}")
+
+                gc.collect()
+
                 if base_dir.exists():
                     base_dir.rename(backup_dir)
-                temp_dir.rename(base_dir)
-            except Exception:
+
+                rename_error: Exception | None = None
+                for attempt in range(5):
+                    try:
+                        temp_dir.rename(base_dir)
+                        rename_error = None
+                        break
+                    except PermissionError as e:
+                        rename_error = e
+                        time.sleep(0.5)
+                    except Exception as e:
+                        rename_error = e
+                        break
+                if rename_error:
+                    raise rename_error
+            except Exception as e:
+                print(f"Error swapping index dirs: {e}")
                 # Attempt to restore original layout and clean temp on failure
                 if not base_dir.exists() and backup_dir.exists():
                     backup_dir.rename(base_dir)
                 if temp_dir.exists():
                     shutil.rmtree(temp_dir)
                 raise
+            finally:
+                app.state.swap_in_progress = False
 
             index = pt.IndexFactory.of(str(base_dir))
             pipeline = build_pipeline(index, app.state.analyzer)
